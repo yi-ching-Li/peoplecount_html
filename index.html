@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Data Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .status {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 20px;
+            color: white;
+            font-size: 1.5em;
+        }
+        .green { background-color: green; }
+        .yellow { background-color: yellow; color: black; }
+        .red { background-color: red; }
+        .purple { background-color: purple; }
+        .legend {
+            margin-top: 40px;
+            font-size: 1.2em;
+            text-align: left;
+            display: inline-block;
+            width: 80%;
+            max-width: 500px;
+        }
+        .legend div {
+            margin-bottom: 10px;
+        }
+        .data-info {
+            margin-bottom: 20px;
+        }
+        @media (max-width: 600px) {
+            .legend {
+                width: 100%;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Real-Time Data Display</h1>
+    <div class="data-info">
+        <p>Latest Data ID: <span id="data-id">--</span></p>
+        <p>Time: <span id="timestamp">--</span></p>
+        <p>Number of People: <span id="count">--</span></p>
+    </div>
+    <div id="status" class="status">Waiting for data...</div>
+    <div class="legend">
+        <div><span class="green">●</span> Green Light (Seats Available): Less than 20 people</div>
+        <div><span class="yellow">●</span> Yellow Light (Can Board): 21-40 people</div>
+        <div><span class="red">●</span> Red Light (Need to Wait for Next Bus): 41-60 people</div>
+        <div><span class="purple">●</span> Purple Light (Please Choose Another Transport): More than 61 people</div>
+    </div>
+    <script>
+        async function fetchData() {
+            try {
+                const response = await fetch('http://localhost:3007/records');
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+                const data = await response.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    return data[data.length - 1];
+                }
+                throw new Error('Empty data or incorrect format');
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+                return null;
+            }
+        }
+        function updateStatus(count) {
+            const statusDiv = document.getElementById('status');
+            if (count <= 20) {
+                statusDiv.className = 'status green';
+                statusDiv.textContent = 'Green Light (Seats Available)';
+            } else if (count <= 40) {
+                statusDiv.className = 'status yellow';
+                statusDiv.textContent = 'Yellow Light (Can Board)';
+            } else if (count <= 60) {
+                statusDiv.className = 'status red';
+                statusDiv.textContent = 'Red Light (Need to Wait for Next Bus)';
+            } else {
+                statusDiv.className = 'status purple';
+                statusDiv.textContent = 'Purple Light (Please Choose Another Transport)';
+            }
+        }
+        function updateDisplay(data) {
+            document.getElementById('data-id').textContent = data.id || '--';
+            document.getElementById('timestamp').textContent = data.timestamp || '--';
+            document.getElementById('count').textContent = data.count || '--';
+            updateStatus(data.count || 0);
+        }
+        async function refreshData() {
+            const data = await fetchData();
+            if (data) {
+                updateDisplay(data);
+            }
+        }
+        setInterval(refreshData, 1000);
+        refreshData();
+    </script>
+</body>
+</html>
